@@ -1,36 +1,21 @@
-name: Exploitability Analysis
-
+name: Exploitability
 on:
-  pull_request:
   push:
     branches: [main]
-
 permissions:
   contents: read
-
+  security-events: read
 jobs:
   exploitability:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      security-events: write # SARIF upload to Code Scanning
     steps:
       - uses: actions/checkout@v4
-
-      # Your existing scanner step goes here, and writes its report to a file in the workspace.
-      # Or commit the report to the repository and skip this step.
-
-      - name: Run exploitability analysis
-        id: exploitability
+      - name: Assess open Code Scanning alerts
         uses: hackin2minutes-oss/hackin2minutes-oss-exploitability-action@v2
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         with:
-          reports: reports/semgrep.json
-          exposure: internet        # the application is reachable from the internet
+          code-scanning-repo: ${{ github.repository }}
+          code-scanning-ref: ${{ github.ref }}
+          exposure: internet
           fail-on: confirmed_exploitable
-
-      - name: Upload SARIF to Code Scanning
-        if: always() && hashFiles('exploitability-report/universal.sarif') != ''
-        uses: github/codeql-action/upload-sarif@4bfa242aa49c5f7c6770b98670d354a7dfac05f8 # v3
-        with:
-          sarif_file: exploitability-report/universal.sarif
-          category: exploitability
