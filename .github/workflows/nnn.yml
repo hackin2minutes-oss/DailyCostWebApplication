@@ -1,15 +1,40 @@
 name: Exploitability
+
 on:
   push:
     branches: [main]
+
 permissions:
   contents: read
-  security-events: read
+
 jobs:
-  exploitability:
+  codeql:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write   # CodeQL uploads its alerts to Code Scanning
     steps:
       - uses: actions/checkout@v4
+
+      - uses: github/codeql-action/init@v3
+        with:
+          languages: csharp     # change to your project's language
+
+      - uses: github/codeql-action/autobuild@v3
+
+      - uses: github/codeql-action/analyze@v3
+        with:
+          category: /language:csharp
+
+  exploitability:
+    needs: codeql               # runs after the alerts exist
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: read     # the action reads Code Scanning alerts
+    steps:
+      - uses: actions/checkout@v4
+
       - name: Assess open Code Scanning alerts
         uses: hackin2minutes-oss/hackin2minutes-oss-exploitability-action@v2
         env:
